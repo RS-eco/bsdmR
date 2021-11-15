@@ -240,7 +240,7 @@ data("aves_tk4tel")
 data("odonata_tk4tel")
 data("cordex_bioclim_bav_tk4tel")
 
-library(sp); library(raster); library(dplyr)
+library(sp); library(raster); library(dplyr); library(sf)
 climcur <- cordex_bioclim_bav_tk4tel %>% 
   filter(time_frame == "1991-2015") %>% 
   dplyr::select(-c(gcm, ensemble, rcm, rs, rcp, time_frame)) %>%
@@ -331,7 +331,7 @@ spplot(dat_spatial, zcol = "BART_P", cex = 0.5)
 r_dat <- dat %>% rasterFromXYZ()
 climdat <- climcur %>% arrange(x,y) %>% rasterFromXYZ()
 var_stack <- raster::crop(climdat, r_dat); rm(climdat, r_dat, climcur); gc()
-crs(var_stack) <- "+init=epsg:31468"
+raster::projection(var_stack) <- "+init=epsg:31468"
 
 #var_stack
 plot(var_stack)
@@ -417,20 +417,20 @@ sarange$range  # you could use this as 'theRange' argument in for 'spatialBlock'
 
 # get spatial blocks of a given size (e.g. 25 km2):
 set.seed(321)  # set a seed of random numbers so next command yields the same result in different runs of the script
-dat_spatial <- sf::st_transform(sf::st_as_sf(dat_spatial), crs=raster::crs(var_stack))
+#dat_spatial <- sf::st_transform(sf::st_as_sf(dat_spatial), crs=raster::crs(var_stack))
 
 rast <- raster::raster(nrow=67, ncol=58, resolution=c(6100, 5550),
-                       ext=extent(var_stack))
-crs(rast) <- "+init=epsg:31468"
+                       ext=extent(var_stack), crs=raster::projection(var_stack))
+#crs(rast) <- "+init=epsg:31468"
 
-dat_spatial2 <- sf::st_as_sf(dat, coords=c("x", "y"),
-                             crs = raster::crs(rast))
-dat_spatial2 <- 
-rast <- projectRaster(rast, crs=crs(dat_spatial2))
+#dat_spatial2 <- sf::st_as_sf(dat, coords=c("x", "y"),
+#                             crs = raster::crs(rast))
+#dat_spatial2 <- 
+#rast <- projectRaster(rast, crs=crs(dat_spatial2))
 
 #sf::st_crs(dat_spatial) <-"+init=epsg:31468"
 
-blocks <- spatialBlock(speciesData = dat_spatial2, species = myspecies, 
+blocks <- spatialBlock(speciesData = dat_spatial, species = myspecies, 
                        rasterLayer = rast, theRange = 25000, k = 5)  
 # argument 'species' is optional and makes the process slower - see ?spatialBlock
 

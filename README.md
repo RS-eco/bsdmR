@@ -266,6 +266,7 @@ data("cordex_bioclim_bav_tk4tel")
 library(sp)
 library(raster)
 library(dplyr)
+library(sf)
 climcur <- cordex_bioclim_bav_tk4tel %>%
     filter(time_frame == "1991-2015") %>%
     dplyr::select(-c(gcm, ensemble, rcm, rs, rcp, time_frame)) %>%
@@ -274,8 +275,8 @@ climcur <- cordex_bioclim_bav_tk4tel %>%
 rm(cordex_bioclim_bav_tk4tel)
 gc()
           used  (Mb) gc trigger  (Mb) max used  (Mb)
-Ncells 2298908 122.8    4382792 234.1  4382792 234.1
-Vcells 3212876  24.6    8388608  64.0  8386781  64.0
+Ncells 2349008 125.5    4383438 234.2  4383438 234.2
+Vcells 3288690  25.1    8388608  64.0  8388588  64.0
 
 dat <- bind_rows(aves_tk4tel, odonata_tk4tel) %>%
     dplyr::full_join(climcur) %>%
@@ -283,8 +284,8 @@ dat <- bind_rows(aves_tk4tel, odonata_tk4tel) %>%
 rm(aves_tk4tel, odonata_tk4tel)
 gc()
           used  (Mb) gc trigger  (Mb) max used  (Mb)
-Ncells 2313626 123.6    4382792 234.1  4382792 234.1
-Vcells 7290816  55.7   14884830 113.6 14860476 113.4
+Ncells 2363842 126.3    4383438 234.2  4383438 234.2
+Vcells 7366789  56.3   14976004 114.3 14936454 114.0
 
 # Select only one species
 dat <- filter(dat, species == "Saxicola_rubetra") %>%
@@ -415,9 +416,9 @@ var_stack <- raster::crop(climdat, r_dat)
 rm(climdat, r_dat, climcur)
 gc()
           used  (Mb) gc trigger  (Mb) max used  (Mb)
-Ncells 3396924 181.5    6309861 337.0  6309861 337.0
-Vcells 8919158  68.1   17941796 136.9 17940865 136.9
-crs(var_stack) <- "+init=epsg:31468"
+Ncells 3446902 184.1    6452318 344.6  6452318 344.6
+Vcells 8993678  68.7   18051204 137.8 18050269 137.8
+raster::projection(var_stack) <- "+init=epsg:31468"
 
 # var_stack
 plot(var_stack)
@@ -440,8 +441,8 @@ save(bart_pred, file = "data/bart_pred.rda", compress = "xz")
 rm(bart_pred)
 gc()
           used  (Mb) gc trigger  (Mb) max used  (Mb)
-Ncells 3426744 183.1    6309861 337.0  6309861 337.0
-Vcells 8990549  68.6   17941796 136.9 17940865 136.9
+Ncells 3476695 185.7    6452318 344.6  6452318 344.6
+Vcells 9065073  69.2   18051204 137.8 18050269 137.8
 ```
 
 ### Evaluate model predictions
@@ -567,17 +568,20 @@ sarange$range  # you could use this as 'theRange' argument in for 'spatialBlock'
 
 # get spatial blocks of a given size (e.g. 25 km2):
 set.seed(321)  # set a seed of random numbers so next command yields the same result in different runs of the script
-dat_spatial <- sf::st_transform(sf::st_as_sf(dat_spatial), crs = raster::crs(var_stack))
+# dat_spatial <- sf::st_transform(sf::st_as_sf(dat_spatial),
+# crs=raster::crs(var_stack))
 
-rast <- raster::raster(nrow = 67, ncol = 58, resolution = c(6100, 5550), ext = extent(var_stack))
-crs(rast) <- "+init=epsg:31468"
+rast <- raster::raster(nrow = 67, ncol = 58, resolution = c(6100, 5550), ext = extent(var_stack),
+    crs = raster::projection(var_stack))
+# crs(rast) <- '+init=epsg:31468'
 
-dat_spatial2 <- sf::st_as_sf(dat, coords = c("x", "y"), crs = raster::crs(rast))
-dat_spatial2 <- rast <- projectRaster(rast, crs = crs(dat_spatial2))
+# dat_spatial2 <- sf::st_as_sf(dat, coords=c('x', 'y'), crs =
+# raster::crs(rast)) dat_spatial2 <- rast <- projectRaster(rast,
+# crs=crs(dat_spatial2))
 
 # sf::st_crs(dat_spatial) <-'+init=epsg:31468'
 
-blocks <- spatialBlock(speciesData = dat_spatial2, species = myspecies, rasterLayer = rast,
+blocks <- spatialBlock(speciesData = dat_spatial, species = myspecies, rasterLayer = rast,
     theRange = 25000, k = 5)
 # argument 'species' is optional and makes the process slower - see
 # ?spatialBlock
@@ -777,8 +781,8 @@ plot(uncertainty, main = "Credible interval width")
 rm(BART_P)
 gc()
            used  (Mb) gc trigger  (Mb) max used  (Mb)
-Ncells  3486279 186.2    6309861 337.0  6309861 337.0
-Vcells 15824629 120.8   41315555 315.3 41315555 315.3
+Ncells  3536202 188.9    6452318 344.6  6452318 344.6
+Vcells 15899137 121.4   41470096 316.4 41470063 316.4
 
 par(mfrow = c(1, 1), mar = c(4, 4, 2, 1))
 plot(sort(bart_pred_varselect$pred), pch = ".")
@@ -826,8 +830,8 @@ partial_BART_1[[1]] + partial_BART_2[[1]]
 rm(partial_BART_1, partial_BART_2)
 gc()
            used  (Mb) gc trigger  (Mb) max used  (Mb)
-Ncells  3514837 187.8    6309861 337.0  6309861 337.0
-Vcells 11451340  87.4   41315555 315.3 41315555 315.3
+Ncells  3564772 190.4    6452318 344.6  6452318 344.6
+Vcells 11525868  88.0   41470096 316.4 41470063 316.4
 ```
 
 ### Partial dependence plots: 2 variables
